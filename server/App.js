@@ -1,8 +1,10 @@
 require('dotenv').config();
-var express = require('express')
+var express = require('express');
+var monk = require('monk');
+var { OpenAI } = require('openai');
 var { encoding_for_model } = require("tiktoken");
-var { OpenAI } = require('openai')
 
+const db = monk(process.env.MONGO_URI);
 const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
 const app = express();
 
@@ -10,13 +12,27 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.post("/api/request", async (req, res) => {
-    console.log("Received")
+    console.log("Received");
+    const chatId = req.body.chatId;
+    const inputPrompt = req.body.prompt;
+    const userToken = req.body.userToken;
+    let constructedPrompt = [];
+
+    if (parentId) {
+        try {
+            let collection = db.get("chat_history");
+            let doc = await collection.find({ _id: chatId });
+
+        }
+        catch (error) {
+            console.error(error);
+            res.status(500).send("Internal Server Error. Please resend the request.");
+        }
+        return;
+    }
     try {
-        const parentId = req.body.parentId;
-        const prompt = req.body.prompt;
-        const userToken = req.body.userToken;
         console.log(req.body);
-        console.log(req.body.key1)
+        console.log(req.body.key1);
         const completionStream = await openai.chat.completions.create({
             model: "gpt-4-turbo",
             //messages: [{ role: "user", content: message }],
