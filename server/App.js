@@ -1,4 +1,5 @@
 require('dotenv').config();
+var cors = require('cors');
 var express = require('express');
 var monk = require('monk');
 var { OpenAI } = require('openai');
@@ -8,6 +9,7 @@ const db = monk(process.env.MONGO_URI);
 const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -18,25 +20,25 @@ app.post("/api/request", async (req, res) => {
     const userToken = req.body.userToken;
     let constructedPrompt = [];
 
-    if (parentId) {
-        try {
-            let collection = db.get("chat_history");
-            let doc = await collection.find({ _id: chatId });
-
-        }
-        catch (error) {
-            console.error(error);
-            res.status(500).send("Internal Server Error. Please resend the request.");
-        }
-        return;
-    }
+    //if (parentId) {
+    //    try {
+    //        let collection = db.get("chat_history");
+    //        let doc = await collection.find({ _id: chatId });
+    //
+    //    }
+    //    catch (error) {
+    //        console.error(error);
+    //        res.status(500).send("Internal Server Error. Please resend the request.");
+    //    }
+    //    return;
+    //}
     try {
         console.log(req.body);
         console.log(req.body.key1);
         const completionStream = await openai.chat.completions.create({
-            model: "gpt-4-turbo",
-            //messages: [{ role: "user", content: message }],
-            messages: [{ role: "user", content: "Hi" }],
+            model: "gpt-4o",
+            messages: [{ role: "user", content: inputPrompt }],
+            //messages: [{ role: "user", content: "Hi" }],
             stream: true,
             max_tokens: 4096,
         });

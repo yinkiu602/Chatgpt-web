@@ -30,6 +30,7 @@ const LeftBar = () => {
 }
 
 const MainContent = () => {
+  const [message, setMessage] = useState([]);
   return (
     <div className="Main_Content flex flex_col full_height">
       <div className="">
@@ -37,16 +38,24 @@ const MainContent = () => {
       </div>
       <div className='full_height full_width' style={{overflowY:"auto"}}>
         Content
+        {message.map((item, index) => {
+          return (
+            <div key={index} className="flex">
+              <MathJax>{item}</MathJax>
+            </div>
+          )
+        })}
       </div>
-      <BottomBar/>
+      <BottomBar message={message} setMessage={setMessage}/>
     </div>
   )
 }
 
-const BottomBar = () => {
-  const [message, setMessage] = useState("");
+const BottomBar = ({message, setMessage}) => {
+  const [question, setQuestion] = useState("");
+
   function auto_grow(e) {
-    setMessage(e.target.value);
+    setQuestion(e.target.value);
     e.target.style.height = "0px";
     let padding_top = parseInt(window.getComputedStyle(e.target, null).paddingTop);
     let padding_bottom = parseInt(window.getComputedStyle(e.target, null).paddingBottom);
@@ -56,20 +65,35 @@ const BottomBar = () => {
     e.target.style.height = new_height;
   }
 
-  function handle_keydown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      submit();
+  async function submit(e) {
+    if (e.type === "keydown" && !(e.key === "Enter" && !e.shiftKey)) { return; }
+    e.preventDefault();
+    if (question === "") { return; }
+    let res_text = "";
+    let old_message = message;
+    let res = await fetch("http://127.0.0.1:8080/api/request", {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: question,
+      })
+    })
+    for await (const chunk of res.body) {
+      let partial = await new Response(chunk).text();
+      res_text += partial;
+      const new_message = old_message.concat([res_text]);
+      setMessage(new_message);
     }
-  }
-
-  function submit() {
     console.log("Submitted");
   }
+
   return (
     <div className="flex flex_col">
       <form onSubmit={submit} className="submit_form flex">
-          <textarea className="full_width chatbox" name="chatbox" placeholder="Message ChatGPT" rows={1} onKeyDown={event => handle_keydown(event)} onChange={(event => auto_grow(event))} value={message}/>
+          <textarea className="full_width chatbox" name="chatbox" placeholder="Message ChatGPT" rows={1} onKeyDown={submit} onChange={(event => auto_grow(event))} value={question}/>
           <button type="submit"><Arrow></Arrow></button>
       </form>
     </div>
