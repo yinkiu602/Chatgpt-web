@@ -3,6 +3,89 @@ import {ReactComponent as Arrow} from './arrow.svg';
 import './App.css';
 import React, {useState, useEffect} from "react";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { darcula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+/* eslint-disable no-useless-escape */
+const FormatResponse = ({ input_text }) => {
+  if (!input_text) return null;
+
+  const lines = input_text.split("\n");
+  const codeBlockPattern = /^```(.*)$/;
+  const unorderListPattern = /^[\-*]\s+(.*)$/;
+  const orderListPattern = /^\d\.\s+(.*)$/;
+  let formattedElements = [];
+  let listItems = [];
+  let nomralItems = [];
+  let lastMatched = null;
+
+  const flushListItems = () => {
+    if (nomralItems.length) {
+      formattedElements.push(
+        <MathJax key={formattedElements.length}>
+          {nomralItems.join("\n")}
+        </MathJax>
+      );
+      nomralItems = [];
+    }
+    if (listItems.length) {
+      if (lastMatched === "code") {
+        const tempResult = codeBlockPattern.exec(listItems[0]);
+        const language = tempResult ? tempResult[1] : "";
+        formattedElements.push(
+          <SyntaxHighlighter key={formattedElements.length} language={language} style={darcula} wrapLongLines={true} showLineNumbers={true} >
+            {(listItems.slice(1, listItems.length-1)).join("\n")}
+          </SyntaxHighlighter>
+        );
+      }
+      else if (lastMatched === "ul") {
+        formattedElements.push(
+          <ul key={formattedElements.length}>
+            {listItems.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        );
+      }
+      else if (lastMatched === "ol") {
+        formattedElements.push(
+          <ol key={formattedElements.length}>
+            {listItems.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ol>
+        );
+      }
+      listItems = [];
+      lastMatched = null;
+    }
+  }
+
+  lines.forEach((line, index) => {
+    if (codeBlockPattern.test(line.trim()) && !lastMatched) {
+      lastMatched = "code";
+      listItems.push(line);
+    }
+    else if (unorderListPattern.test(line.trim()) && !lastMatched) {
+      lastMatched = "ul";
+      listItems.push(line.trim().replace(/^[\-*]\s+/, ""));
+    }
+    else if (orderListPattern.test(line.trim()) && !lastMatched) {
+      lastMatched = "ol";
+      listItems.push(line.trim().replace(/^\d\.\s+/, ""));
+    }
+    else {
+      if (lastMatched === "code") {
+        listItems.push(line);
+        return;
+      }
+      if (lastMatched) {flushListItems()};
+      nomralItems.push(line);
+    }
+  })
+  flushListItems();
+  return formattedElements;
+}
 
 const LeftBar = () => {
   const [login, setLogin] = useState(false);
@@ -26,37 +109,6 @@ const LeftBar = () => {
       </div>
     </div>
     
-  )
-}
-
-const MainContent = () => {
-  const [message, setMessage] = useState([]);
-
-  useEffect(() => {
-    let chatbox = document.getElementById("main_content");
-    chatbox.scrollTop = chatbox.scrollHeight;
-  }, [message]);
-
-  return (
-    <div className="Main_Content flex flex_col full_height full_width">
-      <div className="">
-        Display test
-      </div>
-      <div className="full_height full_width" id="main_content" style={{overflowY:"auto"}}>
-        Content
-        <div style={{maxWidth: "48rem"}} className="margin_auto">
-          {message.map((item, index) => {
-            return (
-              <div key={index} className={"flex chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
-                <MathJax>{item.content}</MathJax>
-              </div>
-            )
-          })}
-
-        </div>
-      </div>
-      <BottomBar message={message} setMessage={setMessage}/>
-    </div>
   )
 }
 
@@ -111,7 +163,37 @@ const BottomBar = ({message, setMessage}) => {
   );
 }
 
+const MainContent = () => {
+  const [message, setMessage] = useState([]);
 
+  useEffect(() => {
+    let chatbox = document.getElementById("main_content");
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }, [message]);
+
+
+
+  return (
+    <div className="Main_Content flex flex_col full_height full_width">
+      <div className="">
+        Display test
+      </div>
+      <div className="full_height full_width" id="main_content" style={{overflowY:"auto"}}>
+        Content
+        <div style={{maxWidth: "48rem"}} className="margin_auto">
+          {message.map((item, index) => {
+            return (
+              <div key={index} className={"flex flex_col chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
+                {FormatResponse({input_text: item.content})}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      <BottomBar message={message} setMessage={setMessage}/>
+    </div>
+  )
+}
 
 function App() {
   return (
