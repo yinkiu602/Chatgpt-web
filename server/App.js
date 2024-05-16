@@ -37,7 +37,7 @@ app.post("/api/request", async (req, res) => {
         console.log(req.body.key1);
         const completionStream = await openai.chat.completions.create({
             model: "gpt-4o",
-            messages: [{ role: "user", content: inputPrompt }],
+            messages: inputPrompt,
             //messages: [{ role: "user", content: "Hi" }],
             stream: true,
             max_tokens: 4096,
