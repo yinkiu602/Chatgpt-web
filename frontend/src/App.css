@@ -71,8 +71,14 @@
 
 .chatbox {
   line-height: 1.2;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  padding-left: 16px;
+  resize: none;
+}
+
+.chatbox:focus {
+  outline: none;
 }
 
 .user_chat {
@@ -89,6 +95,16 @@
   padding-right: 1.25rem;
   white-space: pre-wrap;
   text-align: left;
+}
+
+.submit_form {
+  border-radius: 1.5rem;
+  background-color: #f0efef;
+}
+
+.submit_form > * {
+  border: none;
+  background: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {

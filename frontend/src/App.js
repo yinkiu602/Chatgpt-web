@@ -155,7 +155,15 @@ const BottomBar = ({message, setMessage}) => {
     let padding_top = parseInt(window.getComputedStyle(chatbox, null).paddingTop);
     let padding_bottom = parseInt(window.getComputedStyle(chatbox, null).paddingBottom);
     let content_row = ~~((chatbox.scrollHeight - padding_top - padding_bottom) / parseInt(window.getComputedStyle(chatbox, null).lineHeight));
-    let new_row = content_row < 4 ? content_row : 4;
+    let new_row;
+    if (content_row < 4) {
+      new_row = content_row;
+      chatbox.style.scrollbarWidth = "none";
+    }
+    else {
+      new_row = 4;
+      chatbox.style.scrollbarWidth = "auto";
+    }
     let new_height = new_row * parseInt(window.getComputedStyle(chatbox).lineHeight) +"px";
     chatbox.style.height = new_height;
   }, [question]);
@@ -191,7 +199,7 @@ const BottomBar = ({message, setMessage}) => {
     <div className="flex flex_col">
       <form onSubmit={submit} className="submit_form flex">
           <textarea className="full_width chatbox" id="chatbox" name="chatbox" placeholder="Message ChatGPT" rows={1} onKeyDown={submit} onChange={(event => setQuestion(event.target.value))} value={question}/>
-          <button type="submit"><Arrow></Arrow></button>
+          <button type="submit" id="submit_but"><Arrow></Arrow></button>
       </form>
     </div>
   );
