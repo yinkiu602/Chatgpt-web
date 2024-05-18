@@ -11,16 +11,20 @@ const FormatResponse = ({ input_text }) => {
   if (!input_text) return null;
 
   const lines = input_text.split("\n");
-  const codeBlockPattern = /^```(.*)$/;
+  const codeBlockPattern = /^\s*```(.*)$/;
   const unorderListPattern = /^[\-*]\s+(.*)$/;
   const orderListPattern = /^\d\.\s+(.*)$/;
   let formattedElements = [];
   let listItems = [];
   let nomralItems = [];
-  let lastMatched = null;
-
-  const flushListItems = () => {
+  let codeLines = [];
+  let lastMatched = [];
+  
+  const flushNormalItems = () => {
     if (nomralItems.length) {
+      if (nomralItems[0].trim() === "") { nomralItems.shift(); }
+      if (nomralItems.length === 0) { return; }
+      nomralItems[0] = nomralItems[0].trimStart();
       formattedElements.push(
         <MathJax key={formattedElements.length}>
           {nomralItems.join("\n")}
@@ -28,17 +32,33 @@ const FormatResponse = ({ input_text }) => {
       );
       nomralItems = [];
     }
-    if (listItems.length) {
-      if (lastMatched === "code") {
-        const tempResult = codeBlockPattern.exec(listItems[0]);
-        const language = tempResult ? tempResult[1] : "";
-        formattedElements.push(
-          <SyntaxHighlighter key={formattedElements.length} language={language} style={darcula} wrapLongLines={true} showLineNumbers={true} >
-            {(listItems.slice(1, listItems.length-1)).join("\n")}
-          </SyntaxHighlighter>
-        );
+  }
+
+  const flushCodeItems = () => {
+    flushNormalItems();
+    if (codeLines.length) {
+      lastMatched.pop();
+      const tempResult = codeBlockPattern.exec(codeLines[0]);
+      const language = tempResult ? tempResult[1] : "";
+      const new_block = (
+        <SyntaxHighlighter key={formattedElements.length} language={language} style={darcula} customStyle={{fontSize: "small", marginLeft: "auto", marginRight: "auto"}} wrapLongLines={true} >
+          {codeLines.slice(1, codeLines.length-1).join("\n")}
+        </SyntaxHighlighter>
+      );
+      if (lastMatched.length && (lastMatched[lastMatched.length - 1] === "ul" || lastMatched[lastMatched.length - 1] === "ol")) {
+        listItems[listItems.length - 1] = (<>{listItems[listItems.length - 1]}{new_block}</>);
       }
-      else if (lastMatched === "ul") {
+      else {
+        formattedElements.push(new_block);
+      }
+      codeLines = [];
+    }
+  }
+
+  const flushListItems = () => {
+    flushNormalItems();
+    if (listItems.length) {
+      if (lastMatched[lastMatched.length - 1] === "ul") {
         formattedElements.push(
           <ul key={formattedElements.length}>
             {listItems.map((item, index) => (
@@ -47,7 +67,7 @@ const FormatResponse = ({ input_text }) => {
           </ul>
         );
       }
-      else if (lastMatched === "ol") {
+      else if (lastMatched[lastMatched.length - 1] === "ol") {
         formattedElements.push(
           <ol key={formattedElements.length}>
             {listItems.map((item, index) => (
@@ -57,33 +77,47 @@ const FormatResponse = ({ input_text }) => {
         );
       }
       listItems = [];
-      lastMatched = null;
+      lastMatched.pop();
     }
   }
 
   lines.forEach((line, index) => {
-    if (codeBlockPattern.test(line.trim()) && !lastMatched) {
-      lastMatched = "code";
-      listItems.push(line);
+    // If code block start is already found
+    if (lastMatched[lastMatched.length - 1] === "code") {
+      // If code block end found
+      if (codeBlockPattern.test(line.trim())) {
+        codeLines.push(line);
+        flushCodeItems();
+      }
+      else {
+        codeLines.push(line);
+      }
+      return;
     }
-    else if (unorderListPattern.test(line.trim()) && !lastMatched) {
-      lastMatched = "ul";
+    // If start of code block found
+    if (codeBlockPattern.test(line.trim())) {
+      lastMatched.push("code");
+      codeLines.push(line);
+    }
+    else if (unorderListPattern.test(line.trim())) {
+      if (lastMatched[lastMatched.length - 1] !== "ul") {
+        lastMatched.push("ul");
+      }
       listItems.push(line.trim().replace(/^[\-*]\s+/, ""));
     }
-    else if (orderListPattern.test(line.trim()) && !lastMatched) {
-      lastMatched = "ol";
+    else if (orderListPattern.test(line.trim())) {
+      if (lastMatched[lastMatched.length - 1] !== "ol") {
+        lastMatched.push("ol");
+      }
       listItems.push(line.trim().replace(/^\d\.\s+/, ""));
     }
     else {
-      if (lastMatched === "code") {
-        listItems.push(line);
-        return;
-      }
-      if (lastMatched) {flushListItems()};
+      if (lastMatched.length) { flushListItems(); }
       nomralItems.push(line);
     }
   })
   flushListItems();
+  flushNormalItems();
   return formattedElements;
 }
 
@@ -171,8 +205,6 @@ const MainContent = () => {
     chatbox.scrollTop = chatbox.scrollHeight;
   }, [message]);
 
-
-
   return (
     <div className="Main_Content flex flex_col full_height full_width">
       <div className="">
@@ -184,7 +216,7 @@ const MainContent = () => {
           {message.map((item, index) => {
             return (
               <div key={index} className={"flex flex_col chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
-                {FormatResponse({input_text: item.content})}
+                {FormatResponse({input_text: item.content})}                
               </div>
             )
           })}
