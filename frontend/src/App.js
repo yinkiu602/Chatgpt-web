@@ -223,9 +223,12 @@ const MainContent = () => {
         <div style={{maxWidth: "48rem"}} className="margin_auto">
           {message.map((item, index) => {
             return (
-              <div key={index} className={"flex flex_col chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
-                {FormatResponse({input_text: item.content})}                
-              </div>
+              <>
+                {item.role === "user" ? <div className="username">You</div> : <div className="bot">ChatGPT</div>}              
+                <div key={index} className={"flex flex_col chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
+                  {FormatResponse({input_text: item.content})}                
+                </div>
+              </>
             )
           })}
         </div>

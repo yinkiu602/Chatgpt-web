@@ -107,6 +107,17 @@
   background: none;
 }
 
+.bot {
+  padding-left: 1.25rem;
+  text-align: left;
+  font-weight: bold;
+}
+
+.username {
+  text-align: right;
+  font-weight: bold;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
