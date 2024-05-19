@@ -4,7 +4,9 @@ import './App.css';
 import React, {useState, useEffect} from "react";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { darcula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { a11yDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+let conversation_id = "";
 
 /* eslint-disable no-useless-escape */
 const FormatResponse = ({ input_text }) => {
@@ -41,7 +43,7 @@ const FormatResponse = ({ input_text }) => {
       const tempResult = codeBlockPattern.exec(codeLines[0]);
       const language = tempResult ? tempResult[1] : "";
       const new_block = (
-        <SyntaxHighlighter key={formattedElements.length} language={language} style={darcula} customStyle={{fontSize: "small", marginLeft: "auto", marginRight: "auto"}} wrapLongLines={true} >
+        <SyntaxHighlighter key={formattedElements.length} language={language} style={a11yDark} customStyle={{fontSize: "small", marginLeft: "auto", marginRight: "auto"}} wrapLongLines={true} >
           {codeLines.slice(1, codeLines.length-1).join("\n")}
         </SyntaxHighlighter>
       );
@@ -112,6 +114,7 @@ const FormatResponse = ({ input_text }) => {
       listItems.push(line.trim().replace(/^\d\.\s+/, ""));
     }
     else {
+      if (line.trim() === "") { return; }
       if (lastMatched.length) { flushListItems(); }
       nomralItems.push(line);
     }
@@ -122,7 +125,39 @@ const FormatResponse = ({ input_text }) => {
 }
 
 const LeftBar = () => {
-  const [login, setLogin] = useState(false);
+  const [username, setUsername] = useState("");
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8080/username", {
+      method: "GET",
+      mode: "cors",
+      credentials: "include",
+    }).then(res => {
+      res.text().then(data => {
+        if (data !== "") {
+          setUsername(data);
+        }
+      });
+    });
+  });
+
+  useEffect(()=>{
+    fetch("http://127.0.0.1:8080/history", {
+      method: "GET",
+      mode: "cors",
+      credentials: "include",
+    }).then(res => {
+      res.json().then(data => {
+        setHistory(data);
+      });
+    });
+  }, [username]);
+
+  const handleLogin = () => {
+    window.location.href = "http://127.0.0.1:8080/oauth2/login";
+  }
+
   return (
     <div className="full_height flex flex_col Left_Menu">
       <div>
@@ -139,7 +174,7 @@ const LeftBar = () => {
         Chat Content here
       </div>
       <div className="flex_col flex">
-        <button>Log in</button>
+        {username ? <span>{username}</span>: <button onClick={handleLogin} type="button">Log in</button>}
       </div>
     </div>
     
@@ -168,6 +203,16 @@ const BottomBar = ({message, setMessage}) => {
     chatbox.style.height = new_height;
   }, [question]);
 
+  async function getConversationId() {
+    let res = await fetch("http://127.0.0.1:8080/new_chat", {
+      method: "GET",
+      mode: "cors",
+      credentials: "include",
+    })
+    let data = await res.json();
+    conversation_id = data.id;
+  }
+
   async function submit(e) {
     if (e.type === "keydown" && !(e.key === "Enter" && !e.shiftKey)) { return; }
     e.preventDefault();
@@ -177,14 +222,19 @@ const BottomBar = ({message, setMessage}) => {
     let old_message = message.concat([{role: "user", content: user_question}]);
     setMessage(old_message);
     setQuestion("");
+    if (conversation_id === "") {
+      await getConversationId();
+    }
     let res = await fetch("http://127.0.0.1:8080/api/request", {
       method: "POST",
       mode: "cors",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         prompt: old_message,
+        chatId: conversation_id,
       })
     })
     for await (const chunk of res.body) {
@@ -239,12 +289,18 @@ const MainContent = () => {
 }
 
 function App() {
+  const mathJaxConfig = {
+    options:{
+      enableMenu: false,
+    },
+  };
+
   return (
-    <MathJaxContext>
-    <div className="App full_height" style={{display:"flex"}}>
-      <LeftBar />
-      <MainContent/>
-    </div>
+    <MathJaxContext config={mathJaxConfig}>
+      <div className="App full_height" style={{display:"flex"}}>
+        <LeftBar />
+        <MainContent/>
+      </div>
     </MathJaxContext>
   );
 }
