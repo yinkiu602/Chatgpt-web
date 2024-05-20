@@ -120,7 +120,7 @@ app.get("/history", async (req, res) => {
         }
         return;
     }
-    res.json({});
+    res.json([]);
 })
 
 app.get("/new_chat", async (req, res) => {
@@ -136,6 +136,47 @@ app.get("/new_chat", async (req, res) => {
         return;
     }
     res.json({ id: "" });
+})
+
+app.get("/history", async (req, res) => {
+    if (req.session.user) {
+        try {
+            let output = [];
+            let docs = await collection.find({ userId: req.session.user }, {sort: {modified: -1}});
+            for (i of docs) {
+                output.push({ id: i._id, title: i.title });
+            }
+            res.json(output);
+        }
+        catch (error) {
+            console.error(error);
+            res.status(500).send("Internal Server Error. Please resend the request.");
+        }
+        return;
+    }
+    res.json({});
+})
+
+app.get("/conversation/:id", async (req, res) => {
+    if (req.session.user) {
+        let noteid = req.params.id;
+        try {
+            let doc = await collection.findOne({ _id: noteid, userId: req.session.user });
+            if (doc) {
+                res.json(doc);
+            }
+            else {
+                res.status(404).send("Not Found");
+            }
+        }
+        catch (err) {
+            console.error(err);
+            res.status(500).send("Internal Server Error. Please resend the request.");
+        };
+    }
+    else {
+        res.status(403).send("Forbidden");
+    }
 })
 
 var server = app.listen(8080, "0.0.0.0", () => {

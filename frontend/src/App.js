@@ -1,4 +1,3 @@
-import {ReactComponent as Logo} from './chatgpt.svg';
 import {ReactComponent as Arrow} from './arrow.svg';
 import './App.css';
 import React, {useState, useEffect} from "react";
@@ -6,9 +5,17 @@ import { MathJax, MathJaxContext } from "better-react-mathjax";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { a11yDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+/* eslint-disable no-useless-escape */
+/* eslint-disable react-hooks/exhaustive-deps */
+
+const fetch_get = {
+  method: "GET",
+  mode: "cors",
+  credentials: "include",
+};
+
 let conversation_id = "";
 
-/* eslint-disable no-useless-escape */
 const FormatResponse = ({ input_text }) => {
   if (!input_text) return null;
 
@@ -43,7 +50,7 @@ const FormatResponse = ({ input_text }) => {
       const tempResult = codeBlockPattern.exec(codeLines[0]);
       const language = tempResult ? tempResult[1] : "";
       const new_block = (
-        <SyntaxHighlighter key={formattedElements.length} language={language} style={a11yDark} customStyle={{fontSize: "small", marginLeft: "auto", marginRight: "auto"}} wrapLongLines={true} >
+        <SyntaxHighlighter key={formattedElements.length} language={language} style={a11yDark} customStyle={{fontSize: "small", marginLeft: "auto", marginRight: "auto", width: "80%"}} wrapLongLines={true} >
           {codeLines.slice(1, codeLines.length-1).join("\n")}
         </SyntaxHighlighter>
       );
@@ -124,56 +131,87 @@ const FormatResponse = ({ input_text }) => {
   return formattedElements;
 }
 
-const LeftBar = () => {
+const MenuItem = ({setMessage, title, id}) => {
+  function click(e) {
+    e.preventDefault();
+    let new_conversation_id = e.target.getAttribute("data-value");
+    conversation_id = new_conversation_id;
+    fetch(("http://127.0.0.1:8080/conversation/" + new_conversation_id), fetch_get).then(res => {
+      res.json().then(data => {
+        setMessage(data.messages);
+      });
+    }).catch(err => {
+      console.log("Failed to retrieve conversation");
+      console.error(err);
+    });
+
+  }
+
+  return (
+    <div className="menu_item" onClick={click} data-value={id}>
+      <span data-value={id}>{title}</span>
+    </div>
+  )
+}
+
+const LeftBar = ({setMessage, loginState, setLoginState}) => {
   const [username, setUsername] = useState("");
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8080/username", {
-      method: "GET",
-      mode: "cors",
-      credentials: "include",
-    }).then(res => {
+    if (loginState) { return; }
+    fetch("http://127.0.0.1:8080/username", fetch_get).then(res => {
       res.text().then(data => {
         if (data !== "") {
           setUsername(data);
+          setLoginState(true);
         }
       });
+    }).catch(err=>{
+      console.log("Failed to retrieve username");
+      console.error(err);
     });
   });
 
   useEffect(()=>{
-    fetch("http://127.0.0.1:8080/history", {
-      method: "GET",
-      mode: "cors",
-      credentials: "include",
-    }).then(res => {
+    fetch("http://127.0.0.1:8080/history", fetch_get).then(res => {
       res.json().then(data => {
         setHistory(data);
       });
+    }).catch(err=>{
+      console.log("Failed to retrieve history");
+      console.error(err);
     });
-  }, [username]);
+  }, [loginState]);
 
   const handleLogin = () => {
     window.location.href = "http://127.0.0.1:8080/oauth2/login";
   }
 
+  const handleNewChat = (e) => {
+    e.preventDefault();
+    conversation_id = "";
+    setMessage([]);
+  }
+
   return (
     <div className="full_height flex flex_col Left_Menu">
       <div>
-        <a href={window.location.origin} style={{display:'flex', height:"2.5rem"}}>
-          <div>
-            <div>
-              <Logo className="w2/3 h2/3"/>
-            </div>
+        <a href={window.location.origin} onClick={handleNewChat} className={"new_chat"} style={{display:'flex', height:"2.5rem"}}>
+          <div style={{paddingRight: "5px"}}>
+            <img className=" h2/3" src="chatgpt.svg" alt="logo"/>
           </div>
           New Chat
         </a>
       </div>
-      <div className="hundred full_width">
-        Chat Content here
+      <div className="hundred full_width content_menu">
+        {history.map((item, index) => {
+          return (
+            <MenuItem key={index} setMessage={setMessage} title={item.title} id={item.id}/>
+          )
+        })}
       </div>
-      <div className="flex_col flex">
+      <div className="flex_col flex account">
         {username ? <span>{username}</span>: <button onClick={handleLogin} type="button">Log in</button>}
       </div>
     </div>
@@ -204,11 +242,7 @@ const BottomBar = ({message, setMessage}) => {
   }, [question]);
 
   async function getConversationId() {
-    let res = await fetch("http://127.0.0.1:8080/new_chat", {
-      method: "GET",
-      mode: "cors",
-      credentials: "include",
-    })
+    let res = await fetch("http://127.0.0.1:8080/new_chat", fetch_get).catch(err => {console.log("Failed to create new chat"); console.error(err);})
     let data = await res.json();
     conversation_id = data.id;
   }
@@ -236,6 +270,9 @@ const BottomBar = ({message, setMessage}) => {
         prompt: old_message,
         chatId: conversation_id,
       })
+    }).catch(err => {
+      console.log("Failed to send message");
+      console.error(err);
     })
     for await (const chunk of res.body) {
       let partial = await new Response(chunk).text();
@@ -255,8 +292,8 @@ const BottomBar = ({message, setMessage}) => {
   );
 }
 
-const MainContent = () => {
-  const [message, setMessage] = useState([]);
+const MainContent = ({message, setMessage}) => {
+  //const [message, setMessage] = useState([]);
 
   useEffect(() => {
     let chatbox = document.getElementById("main_content");
@@ -266,10 +303,9 @@ const MainContent = () => {
   return (
     <div className="Main_Content flex flex_col full_height full_width">
       <div className="">
-        Display test
+        ChatGPT Clone
       </div>
-      <div className="full_height full_width" id="main_content" style={{overflowY:"auto"}}>
-        Content
+      <div className="full_height full_width" id="main_content" style={{overflowY:"auto", marginBottom: "30px"}}>
         <div style={{maxWidth: "48rem"}} className="margin_auto">
           {message.map((item, index) => {
             return (
@@ -289,6 +325,8 @@ const MainContent = () => {
 }
 
 function App() {
+  const [message, setMessage] = useState([]);
+  const [loginState, setLoginState] = useState(false);
   const mathJaxConfig = {
     options:{
       enableMenu: false,
@@ -298,8 +336,8 @@ function App() {
   return (
     <MathJaxContext config={mathJaxConfig}>
       <div className="App full_height" style={{display:"flex"}}>
-        <LeftBar />
-        <MainContent/>
+        <LeftBar setMessage={setMessage} loginState={loginState} setLoginState={setLoginState}/>
+        <MainContent message={message} setMessage={setMessage}/>
       </div>
     </MathJaxContext>
   );

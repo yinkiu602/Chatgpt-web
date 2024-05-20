@@ -64,6 +64,7 @@
   align-items: center;
   position: relative;
   min-width: 260px;
+  max-width: 260px;
   box-sizing: border-box;
   padding: 1rem;
   background-color: #f9f9f9;
@@ -113,9 +114,44 @@
   font-weight: bold;
 }
 
+.new_chat, .new_chat:visited, .new_chat:hover, .new_chat:active{
+  color: inherit;
+}
+
 .username {
   text-align: right;
   font-weight: bold;
+}
+
+.content_menu {
+  overflow-y: auto;
+}
+
+.menu_item {
+  text-align: left;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu_item:hover {
+  background-color: #ececec;
+  cursor: pointer;
+}
+
+.menu_button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  font-size: medium;
+  padding: 0.5rem;
+}
+
+.account {
+  padding-top: 15px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
