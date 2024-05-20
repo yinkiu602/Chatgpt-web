@@ -18,7 +18,7 @@ let conversation_id = "";
 
 const FormatResponse = ({ input_text }) => {
   if (!input_text) return null;
-
+  
   const lines = input_text.split("\n");
   const codeBlockPattern = /^\s*```(.*)$/;
   const unorderListPattern = /^[\-*]\s+(.*)$/;
@@ -221,6 +221,8 @@ const LeftBar = ({setMessage, loginState, setLoginState}) => {
 
 const BottomBar = ({message, setMessage}) => {
   const [question, setQuestion] = useState("");
+  const [attachment, setAttachment] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     let chatbox = document.getElementById("chatbox");
@@ -249,11 +251,18 @@ const BottomBar = ({message, setMessage}) => {
 
   async function submit(e) {
     if (e.type === "keydown" && !(e.key === "Enter" && !e.shiftKey)) { return; }
+    if (uploading) { return; }
     e.preventDefault();
     if (question === "") { return; }
     let res_text = "";
     let user_question = question;
-    let old_message = message.concat([{role: "user", content: user_question}]);
+    let old_message;
+    if (attachment.length) {
+      old_message = message.concat([{role: "user", content: [{type: "text", text: user_question}].concat(attachment)}]);
+    }
+    else {
+      old_message = message.concat([{role: "user", content: user_question}]);
+    }
     setMessage(old_message);
     setQuestion("");
     if (conversation_id === "") {
@@ -282,11 +291,26 @@ const BottomBar = ({message, setMessage}) => {
     }
   }
 
+  async function paste(e) {
+    return;
+    const image_regex = /^image\/.*/;
+    const items = [].slice.call(e.clipboardData.items).filter(i=> image_regex.test(i.type));
+    if (items.length === 0) { return; }
+    const image = items[0].getAsFile();
+    const reader = new FileReader();
+    setUploading(true);
+    reader.onloadend = function() {
+      setAttachment(attachment.concat([reader.result]));
+      setUploading(false);
+    }
+    reader.readAsDataURL(image);
+  }
+
   return (
     <div className="flex flex_col">
       <form onSubmit={submit} className="submit_form flex">
-          <textarea className="full_width chatbox" id="chatbox" name="chatbox" placeholder="Message ChatGPT" rows={1} onKeyDown={submit} onChange={(event => setQuestion(event.target.value))} value={question}/>
-          <button type="submit" id="submit_but"><Arrow></Arrow></button>
+          <textarea className="full_width chatbox" id="chatbox" name="chatbox" placeholder="Message ChatGPT" rows={1} onKeyDown={submit} onChange={(event => setQuestion(event.target.value))} onPaste={paste} value={question}/>
+          <button type="submit" id="submit_but"><Arrow/></button>
       </form>
     </div>
   );
