@@ -35,7 +35,7 @@ const FormatResponse = ({ input_text }) => {
       if (nomralItems.length === 0) { return; }
       nomralItems[0] = nomralItems[0].trimStart();
       formattedElements.push(
-        <MathJax key={formattedElements.length}>
+        <MathJax key={formattedElements.length} dynamic>
           {nomralItems.join("\n")}
         </MathJax>
       );
