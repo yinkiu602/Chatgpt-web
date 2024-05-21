@@ -178,7 +178,6 @@ const LeftBar = ({setMessage, loginState, setLoginState}) => {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    if (loginState) { return; }
     fetch("http://127.0.0.1:8080/username", fetch_get).then(res => {
       res.text().then(data => {
         if (data !== "") {
@@ -190,7 +189,7 @@ const LeftBar = ({setMessage, loginState, setLoginState}) => {
       console.log("Failed to retrieve username");
       console.error(err);
     });
-  });
+  }, []);
 
   useEffect(()=>{
     fetch("http://127.0.0.1:8080/history", fetch_get).then(res => {
@@ -282,6 +281,43 @@ const BottomBar = ({message, setMessage}) => {
     conversation_id = data.id;
   }
 
+  function scaleImage(base64_img) {
+    const max_long = 2000;
+    const max_short = 768;
+    let img = new Image();
+    img.src = base64_img;
+    let canvas = document.createElement("canvas");
+    let ctx = canvas.getContext("2d");
+    let width = img.width;
+    let height = img.height;
+    let new_width, new_height;
+    if (width > height) {
+      if (width > max_long) {
+        new_width = max_long;
+        new_height = height * max_long / width;
+      }
+      if (new_height > max_short) {
+        new_height = max_short;
+        new_width = width * max_short / height;
+      }
+    }
+    else {
+      if (height > max_long) {
+        new_height = max_long;
+        new_width = width * max_long / height;
+      }
+      if (new_width > max_short) {
+        new_width = max_short;
+        new_height = height * max_short / width;
+      }
+    }
+    canvas.width = new_width;
+    canvas.height = new_height;
+    ctx.drawImage(img, 0, 0, new_width, new_height);
+    console.log(`New height: ${new_height}, New width: ${new_width}`)
+    return canvas.toDataURL();
+  }
+
   async function submit(e) {
     if (e.type === "keydown" && !(e.key === "Enter" && !e.shiftKey)) { return; }
     if (uploading) { return; }
@@ -293,15 +329,12 @@ const BottomBar = ({message, setMessage}) => {
     let attachment_content= [];
     if (attachment.length) {
       attachment.forEach((item) => {
-        attachment_content.push({type: "image_url", image_url: {url: item}});
+        attachment_content.push({type: "image_url", image_url: {url: scaleImage(item)}});
       })
-    }
-    //let old_message = message.concat([{role: "user", content: [{type: "text", text: user_question}].concat([{type: "image_url", image_url: {url: attachment[0]}}])}]);
-    if (attachment.length) {
       old_message = message.concat([{role: "user", content: [{type: "text", text: user_question}].concat(attachment_content)}]);
     }
     else {
-      old_message = message.concat([{role: "user", content: user_question}]);
+      old_message = message.concat([{role: "user", content: [{type: "text", text: user_question}]}]);
     }
     setMessage(old_message);
     setQuestion("");
