@@ -92,7 +92,7 @@ app.post("/api/request", async (req, res) => {
     if (chatId !== "") {
         const outputPrompt = inputPrompt.concat([{ role: "assistant", content: res_msg }]);
         try {
-            await collection.update({_id: chatId}, { $set: { messages: outputPrompt, modified: Date.now(), title: outputPrompt[0].content } });
+            await collection.update({_id: chatId}, { $set: { messages: outputPrompt, modified: Date.now(), title: outputPrompt[0].content[0].text} });
         }
         catch (error) {
             console.log("Failed to write to db");

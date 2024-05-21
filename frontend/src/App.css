@@ -53,11 +53,6 @@
   box-sizing: border-box;
 }
 
-.submit_form {
-  align-items: center;
-  width: 48rem;
-}
-
 .Left_Menu {
   justify-content: space-between;
   flex-direction: column;
@@ -76,6 +71,7 @@
   padding-bottom: 16px;
   padding-left: 16px;
   resize: none;
+  text-align: left;
 }
 
 .chatbox:focus {
@@ -98,9 +94,26 @@
   text-align: left;
 }
 
-.submit_form {
+.submit_form_div {
   border-radius: 1.5rem;
   background-color: #f0efef;
+}
+
+.msg_image_div {
+  text-align: left;
+}
+
+.msg_image {
+  padding-left: 16px;
+  padding-top: 16px;
+  padding-bottom: 0px;
+  max-width: 50px;
+  max-height: 50px;
+}
+
+.submit_form {
+  align-items: center;
+  width: 48rem;
 }
 
 .submit_form > * {
@@ -112,6 +125,7 @@
   padding-left: 1.25rem;
   text-align: left;
   font-weight: bold;
+  padding-top: 10px;
 }
 
 .new_chat, .new_chat:visited, .new_chat:hover, .new_chat:active{
@@ -121,6 +135,7 @@
 .username {
   text-align: right;
   font-weight: bold;
+  padding-top: 10px;
 }
 
 .content_menu {

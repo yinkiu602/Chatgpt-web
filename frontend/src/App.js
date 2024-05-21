@@ -19,10 +19,24 @@ let conversation_id = "";
 const FormatResponse = ({ input_text }) => {
   if (!input_text) return null;
   
-  const lines = input_text.split("\n");
+  let lines;
+  if (Array.isArray(input_text)) {
+    let temp = [];
+    input_text.forEach((item) => {
+      if (item.type === "text") {
+        temp.push(item.text);
+      }
+      else if (item.type === "image_url") {
+        temp.push(item.image_url.url);
+      }
+    });
+    lines = temp;
+  }
+  else {lines = input_text.split("\n");}
   const codeBlockPattern = /^\s*```(.*)$/;
   const unorderListPattern = /^[\-*]\s+(.*)$/;
   const orderListPattern = /^\d\.\s+(.*)$/;
+  const base64Pattern = /^data:image\/[a-zA-Z]*;base64,/;
   let formattedElements = [];
   let listItems = [];
   let nomralItems = [];
@@ -119,6 +133,11 @@ const FormatResponse = ({ input_text }) => {
         lastMatched.push("ol");
       }
       listItems.push(line.trim().replace(/^\d\.\s+/, ""));
+    }
+    else if (base64Pattern.test(line.trim())) {
+      formattedElements.push(
+        <img key={formattedElements.length} src={line.trim()} alt="attachment" style={{maxWidth: "100%", maxHeight: "100%"}}/>
+      );
     }
     else {
       if (line.trim() === "") { return; }
@@ -219,6 +238,20 @@ const LeftBar = ({setMessage, loginState, setLoginState}) => {
   )
 }
 
+const BottomBarImage = ({image, index, attachment, setAttachment}) => {
+
+  function imageClick(e) {
+    const target_index = e.target.getAttribute("data-index");
+    let new_attachment = [].concat(attachment);
+    new_attachment.splice(target_index, 1);
+    setAttachment(new_attachment);
+  }
+  
+  return (
+    <img src={image} data-index={index} className="msg_image" alt="attachment" onClick={imageClick}/>
+  )
+}
+
 const BottomBar = ({message, setMessage}) => {
   const [question, setQuestion] = useState("");
   const [attachment, setAttachment] = useState([]);
@@ -257,14 +290,22 @@ const BottomBar = ({message, setMessage}) => {
     let res_text = "";
     let user_question = question;
     let old_message;
+    let attachment_content= [];
     if (attachment.length) {
-      old_message = message.concat([{role: "user", content: [{type: "text", text: user_question}].concat(attachment)}]);
+      attachment.forEach((item) => {
+        attachment_content.push({type: "image_url", image_url: {url: item}});
+      })
+    }
+    //let old_message = message.concat([{role: "user", content: [{type: "text", text: user_question}].concat([{type: "image_url", image_url: {url: attachment[0]}}])}]);
+    if (attachment.length) {
+      old_message = message.concat([{role: "user", content: [{type: "text", text: user_question}].concat(attachment_content)}]);
     }
     else {
       old_message = message.concat([{role: "user", content: user_question}]);
     }
     setMessage(old_message);
     setQuestion("");
+    setAttachment([]);
     if (conversation_id === "") {
       await getConversationId();
     }
@@ -292,7 +333,6 @@ const BottomBar = ({message, setMessage}) => {
   }
 
   async function paste(e) {
-    return;
     const image_regex = /^image\/.*/;
     const items = [].slice.call(e.clipboardData.items).filter(i=> image_regex.test(i.type));
     if (items.length === 0) { return; }
@@ -307,10 +347,16 @@ const BottomBar = ({message, setMessage}) => {
   }
 
   return (
-    <div className="flex flex_col">
+    <div className="flex flex_col submit_form_div">
+      <div className="msg_image_div">
+        {attachment.map((item, index) => {return (
+              <BottomBarImage key={index} image={item} index={index} attachment={attachment} setAttachment={setAttachment}/>
+            )
+          })}
+      </div>
       <form onSubmit={submit} className="submit_form flex">
-          <textarea className="full_width chatbox" id="chatbox" name="chatbox" placeholder="Message ChatGPT" rows={1} onKeyDown={submit} onChange={(event => setQuestion(event.target.value))} onPaste={paste} value={question}/>
-          <button type="submit" id="submit_but"><Arrow/></button>
+        <textarea className="full_width chatbox" id="chatbox" name="chatbox" placeholder="Message ChatGPT" rows={1} onKeyDown={submit} onChange={(event => setQuestion(event.target.value))} onPaste={paste} value={question}/>
+        <button type="submit" id="submit_but"><Arrow/></button>
       </form>
     </div>
   );
