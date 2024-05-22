@@ -192,6 +192,7 @@ const LeftBar = ({setMessage, loginState, setLoginState}) => {
   }, []);
 
   useEffect(()=>{
+    if (!loginState) { return; }
     fetch("http://127.0.0.1:8080/history", fetch_get).then(res => {
       res.json().then(data => {
         setHistory(data);
