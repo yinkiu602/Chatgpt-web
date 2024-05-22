@@ -290,7 +290,7 @@ const BottomBar = ({message, setMessage}) => {
     let ctx = canvas.getContext("2d");
     let width = img.width;
     let height = img.height;
-    let new_width, new_height;
+    let new_width = width, new_height = height;
     if (width > height) {
       if (width > max_long) {
         new_width = max_long;
