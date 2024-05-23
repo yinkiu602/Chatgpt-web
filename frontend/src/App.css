@@ -169,6 +169,18 @@
   padding-top: 15px;
 }
 
+.blinking {
+  animation: blinking 1s infinite;
+  font-size: large;
+  font: bold;
+}
+
+@keyframes blinking {
+	0% {opacity: 0}
+	49%{opacity: 0}
+	50% {opacity: 1}
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;

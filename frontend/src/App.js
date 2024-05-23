@@ -252,7 +252,7 @@ const BottomBarImage = ({image, index, attachment, setAttachment}) => {
   )
 }
 
-const BottomBar = ({message, setMessage}) => {
+const BottomBar = ({message, setMessage, setThinking}) => {
   const [question, setQuestion] = useState("");
   const [attachment, setAttachment] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -358,12 +358,14 @@ const BottomBar = ({message, setMessage}) => {
       console.log("Failed to send message");
       console.error(err);
     })
+    setThinking(true);
     for await (const chunk of res.body) {
       let partial = await new Response(chunk).text();
       res_text += partial;
       const new_message = old_message.concat([{role: "assistant", content: res_text}]);
       setMessage(new_message);
     }
+    setThinking(false);
   }
 
   async function paste(e) {
@@ -398,6 +400,7 @@ const BottomBar = ({message, setMessage}) => {
 
 const MainContent = ({message, setMessage}) => {
   //const [message, setMessage] = useState([]);
+  const [thinking, setThinking] = useState(false);
 
   useEffect(() => {
     let chatbox = document.getElementById("main_content");
@@ -416,14 +419,15 @@ const MainContent = ({message, setMessage}) => {
               <>
                 {item.role === "user" ? <div className="username">You</div> : <div className="bot">ChatGPT</div>}              
                 <div key={index} className={"flex flex_col chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
-                  {FormatResponse({input_text: item.content})}                
+                  {FormatResponse({input_text: item.content})}
+                  {thinking ? <span className="blinking">•</span>: ""}
                 </div>
               </>
             )
           })}
         </div>
       </div>
-      <BottomBar message={message} setMessage={setMessage}/>
+      <BottomBar message={message} setMessage={setMessage} setThinking={setThinking}/>
     </div>
   )
 }
