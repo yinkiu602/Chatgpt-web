@@ -25,12 +25,12 @@ A cloned version of ChatGPT website written in JavaScript. Using OpenAI API to i
 - [X]  Upload image in prompt by Ctrl+V to utilize GPT-4 vision capabilities
 
 ## TODOs
-- []  Button for deleting chat history
-- []  Button for removing uploaded image in prompt
-- []  Button for uploading image instead of Ctrl+V only
-- []  Better UI design
-- []  Logout button
-- []  Responsive Web Design (Especially for mobile users)
+- [ ]  Button for deleting chat history
+- [ ]  Button for removing uploaded image in prompt
+- [ ]  Button for uploading image instead of Ctrl+V only
+- [ ]  Better UI design
+- [ ]  Logout button
+- [ ]  Responsive Web Design (Especially for mobile users)
 
 ## General installation
 ```
@@ -39,16 +39,16 @@ git clone https://github.com/yinkiu602/Chatgpt-web.git
 
 ## Installation (Frontend)
 ```bash
-  cd frontend
-  npm install
-  npm start
+cd frontend
+npm install
+npm start
 ```
 
 ## Installation (Backend)
 ```bash
-  cd server
-  npm install
-  node App.js
+cd server
+npm install
+node App.js
 ```
 ## Chat saving
 - All chat history will be automatically saved to database if the user is logged in.
