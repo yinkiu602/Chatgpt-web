@@ -4,12 +4,13 @@ var express = require('express');
 var session = require('express-session')
 var monk = require('monk');
 var { OpenAI } = require('openai');
-var { encoding_for_model } = require("tiktoken");
+var { encodingForModel } = require("js-tiktoken");
 
 const db = monk(process.env.MONGO_URI);
 const collection = db.get("chat_history");
 const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
 const app = express();
+const enc = encodingForModel("gpt-4o");
 
 app.use(cors({credentials: true, origin: ['http://127.0.0.1:3000']}));
 app.use(express.json({limit: '5mb'}));
@@ -67,15 +68,24 @@ app.post("/api/request", async (req, res) => {
     console.log(req.session.user);
     console.log(req.body.chatId);
     const chatId = req.body.chatId;
-    const inputPrompt = req.body.prompt;
-    let res_msg = ""
+    let inputPrompt = req.body.prompt;
+    let res_msg = "";
+    let req_token = 0;
+    for (let i = inputPrompt.length - 1; i >= 0; i--) {
+        if (inputPrompt[i].role === "user") { req_token += enc.encode(inputPrompt[i].content[0].text).length; }
+        else { req_token += enc.encode(inputPrompt[i].content).length; }
+        if (req_token >= parseInt(process.env.PROMPT_MAX_TOKEN)) {
+            inputPrompt = inputPrompt.slice(i, inputPrompt.length);
+            break;
+        }
+    }
     try {
         const completionStream = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: inputPrompt,
             //messages: [{ role: "user", content: "Hi" }],
             stream: true,
-            max_tokens: 4096,
+            max_tokens: 1000,
         });
         for await (const part of completionStream) {
             let temp = part.choices[0]?.delta?.content || "";
