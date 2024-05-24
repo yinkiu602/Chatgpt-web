@@ -99,16 +99,36 @@
   background-color: #f0efef;
 }
 
-.msg_image_div {
+.msg_image_left {
   text-align: left;
 }
 
-.msg_image {
+.msg_image_div {
+  display: inline-flex;
+  align-items: flex-end;
+  position: relative;
   padding-left: 16px;
   padding-top: 16px;
   padding-bottom: 0px;
+  height: 50px;
+}
+
+.msg_image {
   max-width: 50px;
   max-height: 50px;
+}
+
+.img_del_div {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding-left: 16px;
+  padding-top: 10px;
+}
+
+.img_del {
+  width: 16px;
+  height: 16px;
 }
 
 .submit_form {
@@ -149,6 +169,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  position: relative;
 }
 
 .menu_item:hover {
@@ -163,6 +184,20 @@
   border-radius: 0.5rem;
   font-size: medium;
   padding: 0.5rem;
+}
+
+.menu_delete_button {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.menu_item:hover .menu_delete_button {
+  display: block;
 }
 
 .account {

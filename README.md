@@ -25,8 +25,8 @@ A cloned version of ChatGPT website written in JavaScript. Using OpenAI API to i
 - [X]  Upload image in prompt by Ctrl+V to utilize GPT-4 vision capabilities
 
 ## TODOs
-- [ ]  Button for deleting chat history
-- [ ]  Button for removing uploaded image in prompt
+- [X]  Button for deleting chat history
+- [X]  Button for removing uploaded image in prompt
 - [ ]  Button for uploading image instead of Ctrl+V only
 - [ ]  Better UI design
 - [ ]  Logout button

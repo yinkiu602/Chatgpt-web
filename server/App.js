@@ -179,6 +179,29 @@ app.get("/conversation/:id", async (req, res) => {
     }
 })
 
+app.delete("/conversation/:id", async (req, res) => {
+    if (req.session.user) {
+        let noteid = req.params.id;
+        try {
+            let doc = await collection.findOne({ _id: noteid, userId: req.session.user });
+            if (doc) {
+                let result = await collection.remove({ _id: noteid, userId: req.session.user });
+                res.status(200).send("Deleted");
+            }
+            else {
+                res.status(404).send("Not Found");
+            }
+        }
+        catch (err) {
+            console.error(err);
+            res.status(500).send("Internal Server Error. Please resend the request.");
+        };
+    }
+    else {
+        res.status(403).send("Forbidden");
+    }
+})
+
 var server = app.listen(8080, "0.0.0.0", () => {
     var host = server.address().address
     var port = server.address().port
