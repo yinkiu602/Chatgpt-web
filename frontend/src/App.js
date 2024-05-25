@@ -171,6 +171,7 @@ const MenuItem = ({setMessage, title, id, setReloadHistory}) => {
   function click(e) {
     e.preventDefault();
     let new_conversation_id = e.target.getAttribute("data-value");
+    if (new_conversation_id === conversation_id) { return; }
     conversation_id = new_conversation_id;
     fetch(("http://127.0.0.1:8080/conversation/" + new_conversation_id), fetch_get).then(res => {
       res.json().then(data => {
