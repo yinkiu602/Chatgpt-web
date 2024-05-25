@@ -69,6 +69,7 @@ app.post("/api/request", async (req, res) => {
     console.log(req.body.chatId);
     const chatId = req.body.chatId;
     let inputPrompt = req.body.prompt;
+    let backupPrompt = JSON.parse(JSON.stringify(inputPrompt));
     let res_msg = "";
     let req_token = 0;
     for (let i = inputPrompt.length - 1; i >= 0; i--) {
@@ -100,7 +101,7 @@ app.post("/api/request", async (req, res) => {
         res.status(500).send("Internal Server Error. Please resend the request.");
     }
     if (chatId !== "") {
-        const outputPrompt = inputPrompt.concat([{ role: "assistant", content: res_msg }]);
+        const outputPrompt = backupPrompt.concat([{ role: "assistant", content: res_msg }]);
         try {
             await collection.update({_id: chatId}, { $set: { messages: outputPrompt, modified: Date.now(), title: outputPrompt[0].content[0].text} });
         }
