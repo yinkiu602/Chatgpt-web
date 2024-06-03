@@ -16,7 +16,7 @@ const fetch_get = {
 
 let conversation_id = "";
 
-const FormatResponse = ({ input_text }) => {
+const FormatResponse = ({ input_text, role }) => {
   if (!input_text) return null;
   
   let lines;
@@ -36,6 +36,7 @@ const FormatResponse = ({ input_text }) => {
   const codeBlockPattern = /^\s*```(.*)$/;
   const unorderListPattern = /^[\-*]\s+(.*)$/;
   const orderListPattern = /^\d\.\s+(.*)$/;
+  const boldPatten  = /\*\*(.*?)\*\*/;
   const base64Pattern = /^data:image\/[a-zA-Z]*;base64,/;
   let formattedElements = [];
   let listItems = [];
@@ -43,6 +44,18 @@ const FormatResponse = ({ input_text }) => {
   let codeLines = [];
   let lastMatched = [];
   
+  const boldHighLighting = (text) => {
+    if (boldPatten.test(text) && role !== "user") {
+      return text.split(boldPatten).map((item, index) => {
+        if (index % 2) {
+          return <b key={index}>{item}</b>;
+        }
+        return item;
+      });
+    }
+    return text;
+  }
+
   const flushNormalItems = () => {
     if (nomralItems.length) {
       if (nomralItems[0].trim() === "") { nomralItems.shift(); }
@@ -50,7 +63,7 @@ const FormatResponse = ({ input_text }) => {
       nomralItems[0] = nomralItems[0].trimStart();
       formattedElements.push(
         <MathJax key={formattedElements.length} dynamic>
-          {nomralItems.join("\n")}
+          {boldHighLighting(nomralItems.join("\n"))}
         </MathJax>
       );
       nomralItems = [];
@@ -85,7 +98,7 @@ const FormatResponse = ({ input_text }) => {
         formattedElements.push(
           <ul key={formattedElements.length}>
             {listItems.map((item, index) => (
-              <li key={index}>{item}</li>
+              <li key={index}>{boldHighLighting(item)}</li>
             ))}
           </ul>
         );
@@ -94,7 +107,7 @@ const FormatResponse = ({ input_text }) => {
         formattedElements.push(
           <ol key={formattedElements.length}>
             {listItems.map((item, index) => (
-              <li key={index}>{item}</li>
+              <li key={index}>{boldHighLighting(item)}</li>
             ))}
           </ol>
         );
@@ -448,7 +461,7 @@ const MainContent = ({message, setMessage, setReloadHistory}) => {
               <>
                 {item.role === "user" ? <div className="username">You</div> : <div className="bot">ChatGPT</div>}              
                 <div key={index} className={"flex flex_col chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
-                  {FormatResponse({input_text: item.content})}
+                  {FormatResponse({input_text: item.content, role: item.role})}
                   {(thinking && item.role === "assistant" && index === (message.length - 1)) ? <span className="blinking">•</span>: ""}
                 </div>
               </>
