@@ -5,12 +5,24 @@ var session = require('express-session')
 var monk = require('monk');
 var { OpenAI } = require('openai');
 var { encodingForModel } = require("js-tiktoken");
+var { Ratelimit } =  require("@upstash/ratelimit");
+var { Redis } =  require("@upstash/redis");
 
 const db = monk(process.env.MONGO_URI);
 const collection = db.get("chat_history");
 const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
 const app = express();
 const enc = encodingForModel("gpt-4o");
+const loggedin_ratelimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(40, "3 h"),
+    analytics: true,
+});
+const unlogged_ratelimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(10, "3 h"),
+    analytics: true,
+});
 
 app.use(cors({credentials: true, origin: ['http://127.0.0.1:3000']}));
 app.use(express.json({limit: '5mb'}));
@@ -67,6 +79,18 @@ app.post("/api/request", async (req, res) => {
     console.log("Received");
     console.log(req.session.user);
     console.log(req.body.chatId);
+    const ip = req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    let rate_limit_result = "";
+    if (req.session.user) {
+        rate_limit_result = (await loggedin_ratelimit.limit(req.session.user)).success;
+    }
+    else {
+        rate_limit_result = (await unlogged_ratelimit.limit(ip)).success;
+    }
+    if (!rate_limit_result) {
+        res.status(429).send("Rate Limit Exceeded");
+        return;
+    }
     const chatId = req.body.chatId;
     let inputPrompt = req.body.prompt;
     let backupPrompt = JSON.parse(JSON.stringify(inputPrompt));
