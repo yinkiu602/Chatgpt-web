@@ -454,7 +454,7 @@ const MainContent = ({message, setMessage, setReloadHistory}) => {
       <div className="">
         ChatGPT Clone
       </div>
-      <div className="full_height full_width" id="main_content" style={{overflowY:"auto", marginBottom: "30px"}}>
+      <div className="full_height full_width" id="main_content">
         <div style={{maxWidth: "48rem"}} className="margin_auto">
           {message.map((item, index) => {
             return (

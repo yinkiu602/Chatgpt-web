@@ -53,6 +53,19 @@
   box-sizing: border-box;
 }
 
+#main_content {
+  overflow-y: hidden;
+  margin-bottom: 30px;
+  scrollbar-gutter: stable;
+  --sb-track-color: #cecece;
+  --sb-thumb-color: #abafab;
+  --sb-size: 8px;
+}
+
+#main_content:hover {
+  overflow-y: auto;
+}
+
 .Left_Menu {
   justify-content: space-between;
   flex-direction: column;
@@ -159,6 +172,14 @@
 }
 
 .content_menu {
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
+  --sb-track-color: #cecece;
+  --sb-thumb-color: #abafab;
+  --sb-size: 8px;
+}
+
+.content_menu:hover {
   overflow-y: auto;
 }
 
@@ -243,5 +264,40 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+.content_menu::-webkit-scrollbar {
+  width: var(--sb-size)
+}
+
+.content_menu::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 12px;
+}
+
+.content_menu::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 12px;
+}
+
+#main_content::-webkit-scrollbar {
+  width: var(--sb-size)
+}
+
+#main_content::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 12px;
+}
+
+#main_content::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 12px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  body {
+    scrollbar-color: var(--sb-thumb-color)
+                     var(--sb-track-color);
   }
 }
