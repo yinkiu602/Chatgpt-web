@@ -13,6 +13,7 @@ A cloned version of ChatGPT website written in JavaScript. Using OpenAI API to i
 - [MongoDB database](https://www.mongodb.com/try/download/community)
 - [Node.js + npm](https://nodejs.org/en/download/prebuilt-installer/current)
 - [OpenAI API keys](https://platform.openai.com/api-keys)
+- [Upstash Redis](https://console.upstash.com/redis)
 
 ## Features
 - [X]  Authentication via Discord OAuth2
