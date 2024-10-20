@@ -235,6 +235,10 @@
   display: none;
 }
 
+.katex-html {
+  white-space: pre-wrap;
+}
+
 @keyframes blinking {
 	0% {opacity: 0}
 	49%{opacity: 0}
