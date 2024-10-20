@@ -93,6 +93,7 @@
 
 .user_chat {
   background-color: rgba(244,244,244,1);
+  white-space: pre-wrap;
   margin-left: auto;
   margin-right: 0;
 }
@@ -103,7 +104,6 @@
   padding-bottom: 0.625rem;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
-  white-space: pre-wrap;
   text-align: left;
 }
 
