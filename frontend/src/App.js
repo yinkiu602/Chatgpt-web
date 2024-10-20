@@ -1,9 +1,7 @@
 import {ReactComponent as Arrow} from './arrow.svg';
 import './App.css';
 import React, {useState, useEffect} from "react";
-import { MathJax, MathJaxContext } from "better-react-mathjax";
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { a11yDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import Markdown from './Markdown';
 
 /* eslint-disable no-useless-escape */
 /* eslint-disable react-hooks/exhaustive-deps */
@@ -16,150 +14,36 @@ const fetch_get = {
 
 let conversation_id = "";
 
-const FormatResponse = ({ input_text, role }) => {
+const FormatResponse = ({ input_text, role, index }) => {
   if (!input_text) return null;
-  
-  let lines;
+
+  let formattedElements = [];
   if (Array.isArray(input_text)) {
-    let temp = [];
-    input_text.forEach((item) => {
+    input_text.forEach((item, i) => {
+      const key = `formatted-${index}-${i}`;
       if (item.type === "text") {
-        temp.push(item.text);
+        if (role === "user") {
+          formattedElements.push(<span key={key}>{item.text}</span>);
+        }
+        else {
+          formattedElements.push(<Markdown key={key} content={item.text}/>);
+        }
       }
       else if (item.type === "image_url") {
-        temp.push(item.image_url.url);
+        const temp_element = <img key={key} src={item.image_url.url.trim()} alt="attachment" style={{maxWidth: "100%", maxHeight: "100%"}}/>
+        formattedElements.unshift(temp_element);
       }
     });
-    lines = temp;
-  }
-  else {lines = input_text.split("\n");}
-  const codeBlockPattern = /^\s*```(.*)$/;
-  const unorderListPattern = /^[\-*]\s+(.*)$/;
-  const orderListPattern = /^\d\.\s+(.*)$/;
-  const boldPatten  = /\*\*(.*?)\*\*/;
-  const base64Pattern = /^data:image\/[a-zA-Z]*;base64,/;
-  let formattedElements = [];
-  let listItems = [];
-  let nomralItems = [];
-  let codeLines = [];
-  let lastMatched = [];
-  
-  const boldHighLighting = (text) => {
-    if (boldPatten.test(text) && role !== "user") {
-      return text.split(boldPatten).map((item, index) => {
-        if (index % 2) {
-          return <b key={index}>{item}</b>;
-        }
-        return item;
-      });
-    }
-    return text;
-  }
-
-  const flushNormalItems = () => {
-    if (nomralItems.length) {
-      if (nomralItems[0].trim() === "") { nomralItems.shift(); }
-      if (nomralItems.length === 0) { return; }
-      nomralItems[0] = nomralItems[0].trimStart();
-      formattedElements.push(
-        <MathJax key={formattedElements.length} dynamic>
-          {boldHighLighting(nomralItems.join("\n"))}
-        </MathJax>
-      );
-      nomralItems = [];
-    }
-  }
-
-  const flushCodeItems = () => {
-    flushNormalItems();
-    if (codeLines.length) {
-      lastMatched.pop();
-      const tempResult = codeBlockPattern.exec(codeLines[0]);
-      const language = tempResult ? tempResult[1] : "";
-      const new_block = (
-        <SyntaxHighlighter key={formattedElements.length} language={language} style={a11yDark} customStyle={{fontSize: "small", marginLeft: "auto", marginRight: "auto", width: "80%"}} wrapLongLines={true} >
-          {codeLines.slice(1, codeLines.length-1).join("\n")}
-        </SyntaxHighlighter>
-      );
-      if (lastMatched.length && (lastMatched[lastMatched.length - 1] === "ul" || lastMatched[lastMatched.length - 1] === "ol")) {
-        listItems[listItems.length - 1] = (<>{listItems[listItems.length - 1]}{new_block}</>);
-      }
-      else {
-        formattedElements.push(new_block);
-      }
-      codeLines = [];
-    }
-  }
-
-  const flushListItems = () => {
-    flushNormalItems();
-    if (listItems.length) {
-      if (lastMatched[lastMatched.length - 1] === "ul") {
-        formattedElements.push(
-          <ul key={formattedElements.length}>
-            {listItems.map((item, index) => (
-              <li key={index}>{boldHighLighting(item)}</li>
-            ))}
-          </ul>
-        );
-      }
-      else if (lastMatched[lastMatched.length - 1] === "ol") {
-        formattedElements.push(
-          <ol key={formattedElements.length}>
-            {listItems.map((item, index) => (
-              <li key={index}>{boldHighLighting(item)}</li>
-            ))}
-          </ol>
-        );
-      }
-      listItems = [];
-      lastMatched.pop();
-    }
-  }
-
-  lines.forEach((line, index) => {
-    // If code block start is already found
-    if (lastMatched[lastMatched.length - 1] === "code") {
-      // If code block end found
-      if (codeBlockPattern.test(line.trim())) {
-        codeLines.push(line);
-        flushCodeItems();
-      }
-      else {
-        codeLines.push(line);
-      }
-      return;
-    }
-    // If start of code block found
-    if (codeBlockPattern.test(line.trim())) {
-      lastMatched.push("code");
-      codeLines.push(line);
-    }
-    else if (unorderListPattern.test(line.trim())) {
-      if (lastMatched[lastMatched.length - 1] !== "ul") {
-        lastMatched.push("ul");
-      }
-      listItems.push(line.trim().replace(/^[\-*]\s+/, ""));
-    }
-    else if (orderListPattern.test(line.trim())) {
-      if (lastMatched[lastMatched.length - 1] !== "ol") {
-        lastMatched.push("ol");
-      }
-      listItems.push(line.trim().replace(/^\d\.\s+/, ""));
-    }
-    else if (base64Pattern.test(line.trim())) {
-      formattedElements.push(
-        <img key={formattedElements.length} src={line.trim()} alt="attachment" style={{maxWidth: "100%", maxHeight: "100%"}}/>
-      );
+  } else {
+    const key = `formatted-${index}`;
+    if (role === "user") {
+      formattedElements.push(<span key={key}>{input_text}</span>);
     }
     else {
-      if (line.trim() === "") { return; }
-      if (lastMatched.length) { flushListItems(); }
-      nomralItems.push(line);
+      formattedElements.push(<Markdown key={key} content={input_text}/>);
     }
-  })
-  flushListItems();
-  flushNormalItems();
+  }
+
   return formattedElements;
 }
 
@@ -261,7 +145,7 @@ const LeftBar = ({setMessage, loginState, setLoginState, reloadHistory, setReloa
       <div className="hundred full_width content_menu">
         {history.map((item, index) => {
           return (
-            <MenuItem key={index} setMessage={setMessage} title={item.title} id={item.id} setReloadHistory={setReloadHistory}/>
+            <MenuItem key={`menu-${index}`} setMessage={setMessage} title={item.title} id={item.id} setReloadHistory={setReloadHistory}/>
           )
         })}
       </div>
@@ -378,12 +262,13 @@ const BottomBar = ({message, setMessage, setThinking, setReloadHistory}) => {
     else {
       old_message = message.concat([{role: "user", content: [{type: "text", text: user_question}]}]);
     }
-    setMessage(old_message);
+    setMessage([...old_message, ...[{role: "assistant", content: [{type: "text", text: ""}]}]]);
     setQuestion("");
     setAttachment([]);
     if (conversation_id === "") {
       await getConversationId();
     }
+    setThinking(true);
     let res = await fetch("http://127.0.0.1:8080/api/request", {
       method: "POST",
       mode: "cors",
@@ -399,7 +284,6 @@ const BottomBar = ({message, setMessage, setThinking, setReloadHistory}) => {
       console.log("Failed to send message");
       console.error(err);
     })
-    setThinking(true);
     for await (const chunk of res.body) {
       let partial = await new Response(chunk).text();
       res_text += partial;
@@ -427,10 +311,11 @@ const BottomBar = ({message, setMessage, setThinking, setReloadHistory}) => {
   return (
     <div className="flex flex_col submit_form_div">
       <div className="msg_image_left">
-        {attachment.map((item, index) => {return (
-              <BottomBarImage key={index} image={item} index={index} attachment={attachment} setAttachment={setAttachment}/>
-            )
-          })}
+        {attachment.map((item, index) => {
+          return (
+            <BottomBarImage key={`bot-image-${index}`} image={item} index={index} attachment={attachment} setAttachment={setAttachment}/>
+          )
+        })}
       </div>
       <form onSubmit={submit} className="submit_form flex">
         <textarea className="full_width chatbox" id="chatbox" name="chatbox" placeholder="Message ChatGPT" rows={1} onKeyDown={submit} onChange={(event => setQuestion(event.target.value))} onPaste={paste} value={question}/>
@@ -441,12 +326,18 @@ const BottomBar = ({message, setMessage, setThinking, setReloadHistory}) => {
 }
 
 const MainContent = ({message, setMessage, setReloadHistory}) => {
-  //const [message, setMessage] = useState([]);
   const [thinking, setThinking] = useState(false);
 
   useEffect(() => {
     let chatbox = document.getElementById("main_content");
-    chatbox.scrollTop = chatbox.scrollHeight;
+    if (message.length === 0) { return; }
+    if (message.at(-1).role === "user" || message.at(-1).content[0].text === "") {
+      chatbox.scrollTop = chatbox.scrollHeight;
+      return;
+    }
+    if ((message.at(-1).role === "assistant") && ((Math.abs(chatbox.scrollHeight - chatbox.scrollTop - chatbox.clientHeight) < 100) || (message.at(-1).content[0].text === ""))) {
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
   }, [message]);
 
   return (
@@ -457,14 +348,15 @@ const MainContent = ({message, setMessage, setReloadHistory}) => {
       <div className="full_height full_width" id="main_content">
         <div style={{maxWidth: "48rem"}} className="margin_auto">
           {message.map((item, index) => {
+            const key = `chat-${index}-div`;
             return (
-              <>
+              <div key={key}>
                 {item.role === "user" ? <div className="username">You</div> : <div className="bot">ChatGPT</div>}              
-                <div key={index} className={"flex flex_col chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
-                  {FormatResponse({input_text: item.content, role: item.role})}
+                <div key={`${key}-div`} className={"flex flex_col chat_content fit_content" + (item.role === "user" ? " user_chat": "") }>
+                  {FormatResponse({input_text: item.content, role: item.role, index: index})}
                   {(thinking && item.role === "assistant" && index === (message.length - 1)) ? <span className="blinking">•</span>: ""}
                 </div>
-              </>
+              </div>
             )
           })}
         </div>
@@ -478,19 +370,12 @@ function App() {
   const [message, setMessage] = useState([]);
   const [loginState, setLoginState] = useState(false);
   const [reloadHistory, setReloadHistory] = useState(false);
-  const mathJaxConfig = {
-    options:{
-      enableMenu: false,
-    },
-  };
 
   return (
-    <MathJaxContext config={mathJaxConfig}>
-      <div className="App full_height" style={{display:"flex"}}>
-        <LeftBar setMessage={setMessage} loginState={loginState} setLoginState={setLoginState} reloadHistory={reloadHistory} setReloadHistory={setReloadHistory}/>
-        <MainContent message={message} setMessage={setMessage} setReloadHistory={setReloadHistory}/>
-      </div>
-    </MathJaxContext>
+    <div className="App full_height" style={{display:"flex"}}>
+      <LeftBar setMessage={setMessage} loginState={loginState} setLoginState={setLoginState} reloadHistory={reloadHistory} setReloadHistory={setReloadHistory}/>
+      <MainContent message={message} setMessage={setMessage} setReloadHistory={setReloadHistory}/>
+    </div>
   );
 }
 
